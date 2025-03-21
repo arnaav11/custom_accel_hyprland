@@ -1,6 +1,6 @@
 # RawAccel Alternative
 
-A Python-based application providing a graphical user interface for creating custom mouse acceleration curves, similar in concept to RawAccel.
+A Python-based application providing a graphical user interface for creating custom mouse acceleration curves for Hyprland, similar in concept to RawAccel.
 
 ## Features
 
@@ -15,24 +15,32 @@ A Python-based application providing a graphical user interface for creating cus
 
 * Python 3.6 or later
 * Required Python packages: `tkinter`, `matplotlib`, `numpy`
+* On Arch:
+  ```bash
+  yay -S --needed python-matplotlib python-numpy tk
+  ```
 
 ## Installation
 
 1.  Clone the repository:
     ```bash
-    git clone <repository_url>
-    cd <repository_directory>
+    git clone https://github.com/arnaav11/custom_accel_hyprland.git
+    cd custom_accel_hyprland
     ```
 2.  Install the required packages:
     ```bash
     pip install -r requirements.txt
+    ```
+    On Arch:
+    ```bash
+    yay -S --needed python-matplotlib python-numpy tk
     ```
 
 ## How to Use
 
 1.  Run the application:
     ```bash
-    python your_script_name.py  # Replace with the actual name of your main Python file
+    python main.py  # Replace with the actual name of your main Python file
     ```
 2.  Use the GUI to create or select an acceleration curve.
     * Drag the points on the graph to modify the curve.
@@ -40,7 +48,9 @@ A Python-based application providing a graphical user interface for creating cus
     * Enter comma-separated values in the "Enter Custom Curve" dialog.
     * Adjust the number of subdivisions using the entry box and "Update" button.
 3.  The "Output" text box will display the curve parameters.
-4.  Click "Apply" to (placeholder) apply the changes.  (Note: The "Apply" button functionality is a placeholder and needs to be implemented.)
+4.  Click "Apply" to apply the changes.
+5.  In the "Output" box, there should be a line that you can copy and paste into you hyprland.conf under input
+6.  Done!
 
 ##  Custom Curve Input Format
-To enter a custom curve, click on "Enter Custom Curve" and enter the y-values of the curve points, separated by commas. For example:
+To enter a custom curve, click on "Enter Custom Curve" and enter the y-values of the curve points, separated by commas.
