@@ -71,7 +71,7 @@ class InteractiveLineChart:
         self.subdivision_label = ttk.Label(controls_frame, text="Subdivisions:")
         self.subdivision_label.grid(row=1, column=0, padx=5, pady=5, sticky='w')
         self.subdivision_sv = tk.StringVar()
-        # self.subdivision_sv.set("")
+        self.subdivision_sv.set("")
         self.subdivision_entry = ttk.Entry(controls_frame, width=10, textvariable=self.subdivision_sv)
         
         self.subdivision_entry.grid(row=1, column=1, padx=5, pady=5, sticky='w')
@@ -84,7 +84,7 @@ class InteractiveLineChart:
         self.max_speed_sv = tk.StringVar()
         # self.max_speed_sv.set("")
         # self.subdivision_entry = ttk.Entry(controls_frame, width=10, textvariable=self.max_speed_sv)
-        self.max_speed_entry = ttk.Entry(controls_frame, width=10)
+        self.max_speed_entry = ttk.Entry(controls_frame, width=10, textvariable=self.max_speed_sv)
         self.max_speed_entry.grid(row=2, column=1, padx=5, pady=5, sticky='w')
 
         # Offset Input
@@ -130,7 +130,10 @@ class InteractiveLineChart:
         self.apply_changes()
 
     def offset_callback(self, *args):
-        self.update_graph()
+        if( (self.subdivision_entry.get() and int(self.subdivision_entry.get())) and (self.offset_entry.get()) and (self.max_speed_entry.get() and int(self.max_speed_entry.get()))):
+            self.apply_changes()
+        else:
+            print(self.max_speed_entry.get())
 
     def apply_changes(self):
         """Updates the global points and displays output."""
@@ -253,15 +256,15 @@ class InteractiveLineChart:
         """Updates subdivisions and redraws the graph."""
         try:
             self.offset = float(self.offset_entry.get())  # Get the offset
-            self.offset_points = [min(point + self.offset, 1) for point in self.points]
             value = int(self.subdivision_entry.get())
-            if 5 <= value <= 30:
+            if 1 <= value <= 100:
                 self.num_subdivisions = value
                 self.num_points = self.num_subdivisions + 1
                 self.x_values = np.linspace(0, 1, self.num_points)
                 if update_points:
                     old_x_values = np.linspace(0, 1, len(self.points))
                     self.points = np.interp(self.x_values, old_x_values, self.points).tolist()
+                    self.offset_points = [min(point + self.offset, 1) for point in self.points]
 
 
                 global global_points
@@ -283,10 +286,10 @@ class InteractiveLineChart:
                 self.status_label.config(text=f"Graph Updated", foreground='green')
                 # self.update_output_text()
             else:
-                messagebox.showerror("Error", "Subdivisions must be between 5 and 30.")
+                messagebox.showerror("Error", "Subdivisions must be between 1 and 100.")
                 self.status_label.config(text="Error: Invalid Subdivision Value", foreground='red')
-        except ValueError:
-            messagebox.showerror("Error", f"Invalid input. Please enter an integer.")
+        except ValueError as e:
+            messagebox.showerror("Error", f"Invalid input. Please enter an integer. {e}")
             self.status_label.config(text="Error: Invalid Input", foreground='red')
 
     def on_press(self, event):
