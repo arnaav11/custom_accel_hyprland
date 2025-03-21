@@ -54,3 +54,7 @@ A Python-based application providing a graphical user interface for creating cus
 
 ##  Custom Curve Input Format
 To enter a custom curve, click on "Enter Custom Curve" and enter the y-values of the curve points, separated by commas.
+
+## Screenshot
+![image](https://github.com/user-attachments/assets/032f0001-3dae-4b46-820a-154a3f4941d8)
+
