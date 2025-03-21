@@ -40,7 +40,7 @@ A Python-based application providing a graphical user interface for creating cus
 
 1.  Run the application:
     ```bash
-    python main.py  # Replace with the actual name of your main Python file
+    python main.py
     ```
 2.  Use the GUI to create or select an acceleration curve.
     * Drag the points on the graph to modify the curve.
