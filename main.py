@@ -3,8 +3,11 @@ from tkinter import ttk, simpledialog, messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
+import os
 
+home = os.path.expanduser("~")
 global_points = []
+global_output = ""
 
 class InteractiveLineChart:
     def __init__(self, root):
@@ -79,7 +82,7 @@ class InteractiveLineChart:
         self.update_button.grid(row=1, column=2, padx=5, pady=5, sticky='w')
 
         # Max Speed Input
-        self.max_speed_label = ttk.Label(controls_frame, text="Max Speed:")
+        self.max_speed_label = ttk.Label(controls_frame, text="DPI:")
         self.max_speed_label.grid(row=2, column=0, padx=5, pady=5, sticky='w')
         self.max_speed_sv = tk.StringVar()
         # self.max_speed_sv.set("")
@@ -120,7 +123,7 @@ class InteractiveLineChart:
 
         self.subdivision_entry.insert(0, "10")
         self.offset_entry.insert(0, "0")  # Default offset value
-        self.max_speed_entry.insert(0, "100")  # Default value
+        self.max_speed_entry.insert(0, "800")  # Default value
 
         self.subdivision_sv.trace_add("write", self.offset_callback)
         self.max_speed_sv.trace_add("write", self.offset_callback)
@@ -153,7 +156,7 @@ class InteractiveLineChart:
             return
 
         if self.num_subdivisions > 0:
-            step = self.max_input_speed / self.num_subdivisions  # step
+            step = 1000 / self.num_points  # step
             # x_values = np.linspace(0, max_input_speed, self.num_points) # x values
             # y_values = [min(y + self.offset, 1) for y in self.points]
         else:
@@ -164,8 +167,9 @@ class InteractiveLineChart:
         self.update_graph()  # Update the graph after applying changes
         output_string = "accel_profile = custom "
         output_string += f"{step:.3f} "
-        output_string += " ".join(f"{y:.3f}" for y in self.offset_points)
+        output_string += " ".join(f"{y*self.max_input_speed:.3f}" for y in self.offset_points)
         self.output_text.insert(tk.END, output_string)
+        change_conf(output_string)
         self.status_label.config(text="Changes Applied", foreground='green')
 
     def reset_curve(self):
@@ -204,7 +208,7 @@ class InteractiveLineChart:
         elif preset == "Sine":
             y = np.sin(x * np.pi)
         elif preset == "Expo":
-            y = 2**(10 * (x - 1))
+            y = (2**(x))-1
         elif preset == "Log":
             y = (np.log10(1 + 9 * x))
         elif preset == "Sqrt":
@@ -265,6 +269,7 @@ class InteractiveLineChart:
                     old_x_values = np.linspace(0, 1, len(self.points))
                     self.points = np.interp(self.x_values, old_x_values, self.points).tolist()
                     self.offset_points = [min(point + self.offset, 1) for point in self.points]
+                    self.offset_points[0] = 0
 
 
                 global global_points
@@ -332,7 +337,7 @@ class InteractiveLineChart:
         self.output_text.delete(1.0, tk.END)
         self.max_input_speed = float(self.max_speed_entry.get())
         if self.num_subdivisions > 0:
-            step = self.max_input_speed / self.num_subdivisions
+            step = self.max_input_speed
             # x_values = np.linspace(0, max_input_speed, self.num_points)
             y_values = [point for point in self.offset_points]
         else:
@@ -341,11 +346,30 @@ class InteractiveLineChart:
             y_values = [point for point in self.offset_points]
 
         output_string = "accel_profile = custom "
-        output_string += f"{step:.3f} "
+        output_string += f"{0.25/step:.3f} "
         output_string += " ".join(f"{y:.3f}" for y in y_values)
         self.output_text.insert(tk.END, output_string)
 
+def change_conf(output_string):
+    file = open(f"{home}/.config/hypr/hyprland.conf", "r+")
+    s = file.readlines()
+
+    for i in range(-1, -5, -1):
+        print(s[i])
+        if "input:accel_profile" in s[i]:
+            s[i] = f"input:{output_string}"
+            file.seek(0)
+            file.truncate()
+            file.writelines(s)
+            return
+    s.append(f"input:{output_string}")
+
+    file.seek(0)
+    file.truncate()
+    file.writelines(s)
+
 if __name__ == "__main__":
+    print(f"{home}/.config/hypr/hyprland.conf")
     root = tk.Tk()
     app = InteractiveLineChart(root)
     root.mainloop()
