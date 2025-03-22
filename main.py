@@ -24,7 +24,7 @@ class InteractiveLineChart:
         self.num_points = self.num_subdivisions + 1
         self.x_values = np.linspace(0, 1, self.num_points)
         self.points = list(np.linspace(0, 1, self.num_points))
-        self.max_graph_value = 1  # Track the maximum y-value for the graph, now fixed at 1
+        self.max_graph_value = 2  # Track the maximum y-value for the graph, now fixed at 1
         self.custom_points = None
         self.offset_points = self.points[:]
         self.offset = 0  # Initialize the offset attribute here
@@ -106,6 +106,8 @@ class InteractiveLineChart:
         self.reset_button.pack(side=tk.LEFT, padx=5)
         self.apply_button = ttk.Button(button_frame, text="Apply", command=self.apply_changes)
         self.apply_button.pack(side=tk.LEFT, padx=5)
+        self.disable_button = ttk.Button(button_frame, text="Disable", command=disable_config)
+        self.disable_button.pack(side=tk.LEFT, padx=5)
 
         # Status label
         self.status_label = ttk.Label(root, text="Ready", anchor=tk.W)
@@ -130,11 +132,12 @@ class InteractiveLineChart:
         self.offset_sv.trace_add("write", self.offset_callback)
 
         # self.apply_preset()
-        self.apply_changes()
+        # self.apply_changes()
 
     def offset_callback(self, *args):
         if( (self.subdivision_entry.get() and int(self.subdivision_entry.get())) and (self.offset_entry.get()) and (self.max_speed_entry.get() and int(self.max_speed_entry.get()))):
-            self.apply_changes()
+            # self.apply_changes()
+            pass
         else:
             print(self.max_speed_entry.get())
 
@@ -156,7 +159,7 @@ class InteractiveLineChart:
             return
 
         if self.num_subdivisions > 0:
-            step = 1000 / self.num_points  # step
+            step = self.max_input_speed / self.num_points  # step
             # x_values = np.linspace(0, max_input_speed, self.num_points) # x values
             # y_values = [min(y + self.offset, 1) for y in self.points]
         else:
@@ -174,7 +177,7 @@ class InteractiveLineChart:
 
     def reset_curve(self):
         """Resets the curve."""
-        self.points = list(np.linspace(0, 1, self.num_points))
+        self.points = list(np.linspace(0, self.max_graph_value, self.num_points))
         self.offset_points = self.points[:]
         self.offset = 0  # Reset offset
         self.offset_entry.delete(0, tk.END)
@@ -246,7 +249,7 @@ class InteractiveLineChart:
         # Apply the limit and offset
         if not self.is_custom:
             self.points = y[:]
-            y_values = [min(val + self.offset, 1) for val in y]
+            y_values = [val for val in y]
             self.offset_points = list(y_values)
         # self.is_custom = False # when preset is selected, it is not custom anymore
 
@@ -268,7 +271,7 @@ class InteractiveLineChart:
                 if update_points:
                     old_x_values = np.linspace(0, 1, len(self.points))
                     self.points = np.interp(self.x_values, old_x_values, self.points).tolist()
-                    self.offset_points = [min(point + self.offset, 1) for point in self.points]
+                    self.offset_points = [min(point + self.offset, self.max_graph_value) for point in self.points]
                     self.offset_points[0] = 0
 
 
@@ -276,7 +279,7 @@ class InteractiveLineChart:
                 global_points = self.points[:]
 
                 self.ax.clear()
-                y_values = [min(point, 1) for point in self.points]
+                y_values = [min(point, self.max_graph_value) for point in self.points]
                 self.line, = self.ax.plot(self.x_values, self.offset_points, marker='o', linestyle='-', markersize=8)
                 self.ax.set_xlim(0, 1)
                 self.ax.set_ylim(0, self.max_graph_value)
@@ -313,7 +316,7 @@ class InteractiveLineChart:
         """Handles mouse motion."""
         if self.dragging_point is not None and event.inaxes:
             snapped_y = event.ydata
-            snapped_y = max(0, min(1, snapped_y))
+            snapped_y = max(0, min(self.max_graph_value, snapped_y))
             self.points[self.dragging_point] = snapped_y - self.offset
             self.custom_points = self.points[:] # Store the points
             self.custom_points[self.dragging_point] = snapped_y - self.offset
@@ -321,7 +324,7 @@ class InteractiveLineChart:
             global global_points
             global_points = self.points[:]
 
-            y_values = [min(point + self.offset, 1) for point in self.points]
+            y_values = [min(point + self.offset, self.max_graph_value) for point in self.points]
             self.line.set_ydata(y_values)
             self.canvas.draw()
 
@@ -330,7 +333,7 @@ class InteractiveLineChart:
         if self.dragging_point:
             self.dragging_point = None
             self.status_label.config(text="Curve Modified", foreground='blue')
-            self.apply_changes()
+            # self.apply_changes()
 
     def update_output_text(self):
         """Updates the output text box with the current curve data."""
@@ -363,6 +366,23 @@ def change_conf(output_string):
             file.writelines(s)
             return
     s.append(f"input:{output_string}")
+
+    file.seek(0)
+    file.truncate()
+    file.writelines(s)
+
+def disable_config(*args):
+    file = open(f"{home}/.config/hypr/hyprland.conf", "r+")
+    s = file.readlines()
+
+    for i in range(-1, -5, -1):
+        print(s[i])
+        if "input:accel_profile" in s[i]:
+            s[i] = f"#{s[i]}"
+            file.seek(0)
+            file.truncate()
+            file.writelines(s)
+            return
 
     file.seek(0)
     file.truncate()
