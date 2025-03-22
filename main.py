@@ -24,7 +24,7 @@ class InteractiveLineChart:
         self.num_points = self.num_subdivisions + 1
         self.x_values = np.linspace(0, 1, self.num_points)
         self.points = list(np.linspace(0, 1, self.num_points))
-        self.max_graph_value = 2  # Track the maximum y-value for the graph, now fixed at 1
+        self.max_graph_value = 2  # Track the maximum y-value for the graph
         self.custom_points = None
         self.offset_points = self.points[:]
         self.offset = 0  # Initialize the offset attribute here
@@ -40,7 +40,7 @@ class InteractiveLineChart:
         self.ax.set_xticks(np.linspace(0, 1, self.num_points))
         self.ax.set_yticks(np.linspace(0, self.max_graph_value, self.num_points))
         self.ax.grid(True, linestyle='--', alpha=0.7)
-        self.ax.set_aspect('equal')
+        # self.ax.set_aspect('equal') # Remove this line
         self.fig.patch.set_facecolor('#f0f0f0')
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=root)
@@ -60,10 +60,11 @@ class InteractiveLineChart:
         # Preset dropdown
         self.preset_label = ttk.Label(controls_frame, text="Presets:")
         self.preset_label.grid(row=0, column=0, padx=5, pady=5, sticky='w')
-        self.presets = ["Linear", "Natural", "Power", "Ease In Out", "Ease In", "Ease Out", "Sine", "Custom",
+        self.presets = ["Custom","Linear", "Natural", "Power", "Ease In Out", "Ease In", "Ease Out", "Sine",
                         "Expo", "Log", "Sqrt", "Cubic", "Quintic", "Circular In", "Circular Out",
                         "Circular In Out", "Ease In Sine", "Ease Out Sine", "Ease In Out Sine",
-                        "Ease In Quad", "Ease Out Quad", "Ease In Out Quad"]
+                        "Ease In Quad", "Ease Out Quad", "Ease In Out Quad",
+                        "Overshoot", "Overshoot Extreme", "Parabola", "Inverse Sqrt", "Scaled Linear", "Scaled Natural", "Scaled Power"] # changed the order
         self.preset_var = tk.StringVar()
         self.preset_var.set(self.presets[0])
         self.preset_dropdown = ttk.Combobox(controls_frame, textvariable=self.preset_var, values=self.presets, state="readonly")
@@ -238,6 +239,22 @@ class InteractiveLineChart:
             y = 1 - (1 - x) ** 2
         elif preset == "Ease In Out Quad":
             y = [2 * val**2 if val < 0.5 else 1 - (2 * (1 - val))**2 / 2 for val in x]
+        elif preset == "Overshoot":
+            amplitude = 1.5
+            y = (amplitude + 1) * x**3 - amplitude * x**2
+        elif preset == "Overshoot Extreme":
+            amplitude = 1.7
+            y = (amplitude + 1) * x**5 - amplitude * x**4
+        elif preset == "Parabola":
+            y = 4*x**2
+        elif preset == "Inverse Sqrt":
+            y = 1/np.sqrt(x) if x > 0 else 0
+        elif preset == "Scaled Linear":
+            y = x * self.max_graph_value
+        elif preset == "Scaled Natural":
+            y = x**2 * self.max_graph_value
+        elif preset == "Scaled Power":
+            y = x**3 * self.max_graph_value
         elif preset == "Custom":
             if self.custom_points:
                 self.points = self.custom_points[:]
@@ -248,8 +265,8 @@ class InteractiveLineChart:
 
         # Apply the limit and offset
         if not self.is_custom:
-            self.points = y[:]
-            y_values = [val for val in y]
+            self.points = [max(0, val) for val in y]  # Ensure no negative values
+            y_values = [val for val in self.points] # scale the points.  val is already scaled.
             self.offset_points = list(y_values)
         # self.is_custom = False # when preset is selected, it is not custom anymore
 
@@ -271,7 +288,8 @@ class InteractiveLineChart:
                 if update_points:
                     old_x_values = np.linspace(0, 1, len(self.points))
                     self.points = np.interp(self.x_values, old_x_values, self.points).tolist()
-                    self.offset_points = [min(point + self.offset, self.max_graph_value) for point in self.points]
+                    self.points = [max(0, val) for val in self.points] # Ensure no negative values
+                    self.offset_points = [max(0, point + self.offset) for point in self.points] # Ensure no negatives
                     self.offset_points[0] = 0
 
 
@@ -286,7 +304,7 @@ class InteractiveLineChart:
                 self.ax.set_xticks(np.linspace(0, 1, self.num_points))
                 self.ax.set_yticks(np.linspace(0, self.max_graph_value, self.num_points))
                 self.ax.grid(True, linestyle='--', alpha=0.7)
-                self.ax.set_aspect('equal')
+                # self.ax.set_aspect('equal')  # Remove this line
                 self.fig.patch.set_facecolor('#f0f0f0')
 
                 self.canvas.draw()
@@ -317,14 +335,14 @@ class InteractiveLineChart:
         if self.dragging_point is not None and event.inaxes:
             snapped_y = event.ydata
             snapped_y = max(0, min(self.max_graph_value, snapped_y))
-            self.points[self.dragging_point] = snapped_y - self.offset
+            self.points[self.dragging_point] = max(0, snapped_y - self.offset) # Ensure no negatives
             self.custom_points = self.points[:] # Store the points
-            self.custom_points[self.dragging_point] = snapped_y - self.offset
+            self.custom_points[self.dragging_point] =  max(0, snapped_y - self.offset)
 
             global global_points
             global_points = self.points[:]
 
-            y_values = [min(point + self.offset, self.max_graph_value) for point in self.points]
+            y_values = [max(0, point + self.offset) for point in self.points] # Ensure no negatives
             self.line.set_ydata(y_values)
             self.canvas.draw()
 
