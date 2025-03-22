@@ -31,6 +31,7 @@ class InteractiveLineChart:
         self.offset_points = self.points[:]
         self.offset = 0  # Initialize the offset attribute here
         self.is_custom = False # added to track custom state
+        self.last_applied_preset = "Linear" # added to remember preset
 
         global global_points
         global_points = self.points[:]
@@ -111,6 +112,10 @@ class InteractiveLineChart:
         self.apply_button.pack(side=tk.LEFT, padx=5)
         self.disable_button = ttk.Button(button_frame, text="Disable", command=disable_config)
         self.disable_button.pack(side=tk.LEFT, padx=5)
+        self.auto_apply_bool = False
+        self.auto_apply_v = tk.Variable()
+        self.auto_apply = ttk.Checkbutton(button_frame, text="Apply to hyprland.conf automatically", command=self.auto_apply_change, variable=self.auto_apply_v)
+        self.auto_apply.pack(side=tk.LEFT, padx=5)
 
         # Status label
         self.status_label = ttk.Label(root, text="Ready", anchor=tk.W)
@@ -139,6 +144,11 @@ class InteractiveLineChart:
         # self.apply_preset()
         # self.apply_changes()
 
+    
+    def auto_apply_change(self, *args):
+        self.auto_apply_bool = not self.auto_apply_bool
+        self.save_data()
+    
     def offset_callback(self, *args):
         if( (self.subdivision_entry.get() and int(self.subdivision_entry.get())) and (self.offset_entry.get()) and (self.max_speed_entry.get() and int(self.max_speed_entry.get()))):
             # self.apply_changes()
@@ -195,6 +205,7 @@ class InteractiveLineChart:
         self.preset_var.set("Linear")
         self.status_label.config(text="Curve Reset", foreground='blue')
         self.is_custom = False
+        self.last_applied_preset = "Linear" # Reset Preset.
         self.save_data() # Save after reset
 
     def apply_preset(self, event=None):
@@ -254,7 +265,7 @@ class InteractiveLineChart:
         elif preset == "Parabola":
             y = 4*x**2
         elif preset == "Inverse Sqrt":
-            y = 1/np.sqrt(x) if x > 0 else 0
+            y = [min(1/np.sqrt(val), self.max_graph_value) if val > 0 else 0 for val in x] # Changed this line
         elif preset == "Scaled Linear":
             y = x * self.max_graph_value
         elif preset == "Scaled Natural":
@@ -275,6 +286,7 @@ class InteractiveLineChart:
             y_values = [val for val in self.points] # scale the points.  val is already scaled.
             self.offset_points = list(y_values)
         # self.is_custom = False # when preset is selected, it is not custom anymore
+        self.last_applied_preset = preset # remember the preset
 
         global global_points
         global_points = self.points[:]
@@ -388,7 +400,9 @@ class InteractiveLineChart:
             "custom_points": self.custom_points,
             "offset": self.offset,
             "max_speed": self.max_speed_entry.get(), # added max speed
-            "preset_var": self.preset_var.get() # added preset var
+            "preset_var": self.preset_var.get(), # added preset var
+            "last_applied_preset": self.last_applied_preset, # save last preset
+            "auto_apply": self.auto_apply_bool
         }
         try:
             with open(DATA_FILE, "wb") as f:
@@ -422,6 +436,10 @@ class InteractiveLineChart:
             self.max_speed_entry.delete(0, tk.END)
             self.max_speed_entry.insert(0, str(data["max_speed"]))
             self.preset_var.set(data["preset_var"]) # set preset variable
+            self.last_applied_preset = data["last_applied_preset"] # load last preset
+            self.auto_apply_bool = data["auto_apply"]
+            if self.auto_apply_bool:
+                self.auto_apply_v.set(1)
             global global_points
             global_points = self.points[:]
             self.update_graph(update_points=True) # call update graph
@@ -430,7 +448,7 @@ class InteractiveLineChart:
             messagebox.showerror("Error", f"Failed to load data: {e}")
             self.status_label.config(text="Error: Failed to load data", foreground='red')
             print(f"Error loading data: {e}") # for debugging
-
+            
 def change_conf(output_string):
     file = open(f"{home}/.config/hypr/hyprland.conf", "r+")
     s = file.readlines()
