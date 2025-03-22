@@ -4,10 +4,12 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 import os
+import pickle  # Import the pickle module for saving/loading data
 
 home = os.path.expanduser("~")
 global_points = []
 global_output = ""
+DATA_FILE = "data.dat"  # Define the filename for saved data
 
 class InteractiveLineChart:
     def __init__(self, root):
@@ -132,6 +134,8 @@ class InteractiveLineChart:
         self.max_speed_sv.trace_add("write", self.offset_callback)
         self.offset_sv.trace_add("write", self.offset_callback)
 
+        self.load_data() # Load data at start
+
         # self.apply_preset()
         # self.apply_changes()
 
@@ -175,6 +179,7 @@ class InteractiveLineChart:
         self.output_text.insert(tk.END, output_string)
         change_conf(output_string)
         self.status_label.config(text="Changes Applied", foreground='green')
+        self.save_data() # Save after applying
 
     def reset_curve(self):
         """Resets the curve."""
@@ -190,6 +195,7 @@ class InteractiveLineChart:
         self.preset_var.set("Linear")
         self.status_label.config(text="Curve Reset", foreground='blue')
         self.is_custom = False
+        self.save_data() # Save after reset
 
     def apply_preset(self, event=None):
         """Applies preset curves."""
@@ -275,6 +281,7 @@ class InteractiveLineChart:
         self.update_graph(update_points=True)
         self.status_label.config(text=f"Preset Applied: {preset}", foreground='green')
         self.update_output_text()
+        self.save_data() # Save after applying preset
 
     def update_graph(self, update_points=True):
         """Updates subdivisions and redraws the graph."""
@@ -351,6 +358,7 @@ class InteractiveLineChart:
         if self.dragging_point:
             self.dragging_point = None
             self.status_label.config(text="Curve Modified", foreground='blue')
+            self.save_data()
             # self.apply_changes()
 
     def update_output_text(self):
@@ -370,6 +378,58 @@ class InteractiveLineChart:
         output_string += f"{0.25/step:.3f} "
         output_string += " ".join(f"{y:.3f}" for y in y_values)
         self.output_text.insert(tk.END, output_string)
+
+    def save_data(self):
+        """Saves the current state to a file."""
+        data = {
+            "num_subdivisions": self.num_subdivisions,
+            "points": self.points,
+            "max_graph_value": self.max_graph_value,
+            "custom_points": self.custom_points,
+            "offset": self.offset,
+            "max_speed": self.max_speed_entry.get(), # added max speed
+            "preset_var": self.preset_var.get() # added preset var
+        }
+        try:
+            with open(DATA_FILE, "wb") as f:
+                pickle.dump(data, f)
+            print("Data saved successfully.")  # For debugging
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save data: {e}")
+            self.status_label.config(text="Error: Failed to save data", foreground='red')
+
+    def load_data(self):
+        """Loads the state from a file."""
+        if not os.path.exists(DATA_FILE):
+            print("Data file does not exist.  Starting with defaults.")
+            return  # No file, start with defaults
+
+        try:
+            with open(DATA_FILE, "rb") as f:
+                data = pickle.load(f)
+            print("Data loaded successfully.")  # For debugging
+
+            # Restore the saved state
+            self.num_subdivisions = data["num_subdivisions"]
+            self.num_points = self.num_subdivisions + 1
+            self.x_values = np.linspace(0, 1, self.num_points)
+            self.points = data["points"]
+            self.max_graph_value = data["max_graph_value"]
+            self.custom_points = data["custom_points"]
+            self.offset = data["offset"]
+            self.offset_entry.delete(0, tk.END)
+            self.offset_entry.insert(0, str(self.offset))
+            self.max_speed_entry.delete(0, tk.END)
+            self.max_speed_entry.insert(0, str(data["max_speed"]))
+            self.preset_var.set(data["preset_var"]) # set preset variable
+            global global_points
+            global_points = self.points[:]
+            self.update_graph(update_points=True) # call update graph
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load data: {e}")
+            self.status_label.config(text="Error: Failed to load data", foreground='red')
+            print(f"Error loading data: {e}") # for debugging
 
 def change_conf(output_string):
     file = open(f"{home}/.config/hypr/hyprland.conf", "r+")
@@ -407,9 +467,17 @@ def disable_config(*args):
     file.writelines(s)
 
 if __name__ == "__main__":
+    home = os.path.expanduser("~")
+    global_points = []
+    global_output = ""
+
+    picke_file = open("data.dat", "rb+")
+    pickler = pickle.Pickler(picke_file)
+
     print(f"{home}/.config/hypr/hyprland.conf")
     root = tk.Tk()
     app = InteractiveLineChart(root)
     root.mainloop()
+    picke_file.close()
     print("[ ", end="")
     print(*global_points, sep=", ", end=" ]")
