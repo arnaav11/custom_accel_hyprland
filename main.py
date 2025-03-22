@@ -187,7 +187,8 @@ class InteractiveLineChart:
         output_string += f"{step:.3f} "
         output_string += " ".join(f"{y*self.max_input_speed:.3f}" for y in self.offset_points)
         self.output_text.insert(tk.END, output_string)
-        change_conf(output_string)
+        if self.auto_apply_bool:
+            change_conf(output_string)
         self.status_label.config(text="Changes Applied", foreground='green')
         self.save_data() # Save after applying
 
