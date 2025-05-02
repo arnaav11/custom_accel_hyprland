@@ -52,6 +52,7 @@ A Python-based application providing a graphical user interface for creating cus
 6.  Done!
 
 ## Screenshot
-![image](https://github.com/user-attachments/assets/fa648b44-1ea0-407d-bf01-d4066ec66d1c)
+![image](https://github.com/user-attachments/assets/bed30956-05a9-499d-8d3d-95856e1a231c)
+
 
 
