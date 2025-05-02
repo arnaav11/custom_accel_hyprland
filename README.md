@@ -9,7 +9,6 @@ A Python-based application providing a graphical user interface for creating cus
 * **Custom Curve Input:** Define your own curve by entering comma-separated y-values.
 * **Subdivision Control:** Adjust the number of subdivisions for the curve.
 * **Output Display:** Displays the curve parameters in a format similar to libinput's custom acceleration profile.
-* **Cross-Platform:** Uses Tkinter for the GUI and should run on Windows, macOS, and Linux.
 
 ## Prerequisites
 
@@ -51,9 +50,6 @@ A Python-based application providing a graphical user interface for creating cus
 4.  Click "Apply" to apply the changes.
 5.  In the "Output" box, there should be a line that you can copy and paste into you hyprland.conf under input
 6.  Done!
-
-##  Custom Curve Input Format
-To enter a custom curve, click on "Enter Custom Curve" and enter the y-values of the curve points, separated by commas.
 
 ## Screenshot
 ![image](https://github.com/user-attachments/assets/fa648b44-1ea0-407d-bf01-d4066ec66d1c)
